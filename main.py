@@ -70,4 +70,11 @@ def task_update(task_id:int,task:TaskUpdate):
             t["done"] = task.done
             return t
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Task not found")
-    
+
+@app.delete("/task/{task_id}")
+def del_task(task_id:int):
+    for t in tasks:
+        if t["id"] == task_id:
+            tasks.remove(t)
+            return {HTTPException(status_code=status.HTTP_204_NO_CONTENT,detail="Task removed successfully")}
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=f"there is no task with {task_id}") 
