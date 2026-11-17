@@ -1,18 +1,11 @@
 from fastapi import FastAPI
 from fastapi import HTTPException,status
 from pydantic import BaseModel
-
-
+from schema.schemas import Taskcreate,TaskUpdate
+from database.database import get_db
+from database.database import engine
 app=FastAPI()
 
-
-class Taskcreate(BaseModel):
-    title:str
-
-
-class TaskUpdate(BaseModel):
-    title:str|None=None
-    done:bool|None=None
 
 @app.get("/")
 def root():
