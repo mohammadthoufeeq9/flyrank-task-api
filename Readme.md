@@ -12,6 +12,9 @@ The project demonstrates CRUD (Create, Read, Update, Delete) operations for mana
 - Pydantic
 - Git and GitHub
 - Swagger UI
+- Alembic
+- postgresql
+- SQLalchemy
 
 ## Project Features
 
@@ -118,11 +121,26 @@ You can test all available endpoints directly through Swagger UI.
 
 ## Data Storage
 
-This project currently uses an **in-memory Python list** to store tasks.
+This project uses PostgreSQL as the database and SQLAlchemy ORM for database operations.
 
-No database is connected at this stage.
+All task data is stored persistently in the database and remains available even after server restarts.
 
-Task data will be lost whenever the server restarts.
+Database schema management is handled using Alembic, allowing version-controlled database migrations and automatic table creation.
+
+This approach follows real-world backend development practices and provides a scalable foundation for future enhancements.
+
+
+## Database Design Decision
+
+PostgreSQL was chosen instead of SQLite because PostgreSQL is widely used in production applications and enterprise environments.
+While SQLite is excellent for learning and small local projects, it is a file-based database and is generally not the preferred choice for scalable multi-user backend systems.
+Using PostgreSQL allowed this project to follow industry-standard backend development practices, including:
+Persistent data storage
+Better concurrency handling
+Production-ready database architecture
+Integration with SQLAlchemy ORM
+Database version control using Alembic migrations
+This setup more closely reflects how modern FastAPI applications are developed in real-world projects.
 
 ## Learning Outcomes
 

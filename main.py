@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Depends
 from fastapi import HTTPException,status
-from pydantic import BaseModel
 from schema.schemas import Taskcreate,TaskUpdate
 from database.database import get_db
-from database.database import engine
+from sqlalchemy.orm import Session
+from database.models import Task
+
 app=FastAPI()
 
 
@@ -23,16 +24,17 @@ def healthcheck():
     }
 
 
-tasks=[{"id": 1, "title": "Learn boxing", "done": False},
-       {"id": 2, "title": "Learn kunfu", "done": False}]
+# tasks=[{"id": 1, "title": "Learn boxing", "done": False},
+#        {"id": 2, "title": "Learn kunfu", "done": False}]
 
 @app.get("/tasks")
-def get_tasks():
-    return tasks
+def get_tasks(db:Session=Depends(get_db)):
+    task=db.query(Task).all()
+    return task
 
 @app.get("/task/{task_id}")
-def get_task_by_id(task_id:int):
-    for task in tasks:
+def get_task_by_id(task_id:int,db=Depends(get_db)):
+    for task in db:
         if task["id"] == task_id:
             return task
         else:
@@ -41,33 +43,34 @@ def get_task_by_id(task_id:int):
             }
 
 @app.post("/task-add")
-def task_add(task:Taskcreate):
+def task_add(task:Taskcreate,db:Session=Depends(get_db)):
     if not task.title.strip():
         raise HTTPException(detail="Title cannot be empty",status_code=status.HTTP_400_BAD_REQUEST)
-    new_id=max((t["id"] for t in tasks),default=0)+1
-    new_task=(
-        {"id": new_id, "title": task.title, "done": False}
-    )
-
-    tasks.append(new_task)
-
+    new_task=Task(title=task.title)
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
     return new_task
 
 @app.put("/task/{task_id}")
-def task_update(task_id:int,task:TaskUpdate):
-    if not task.title.strip():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Tittle cannot be empty")
-    for t in tasks:
-        if t["id"] == task_id:
-            t["title"] = task.title
-            t["done"] = task.done
-            return t
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Task not found")
+def task_update(task_id:int,task:TaskUpdate,db:Session=Depends(get_db),):
+    task_obj=db.query(Task).filter(Task.id==task_id).first()
+    if not task_obj:
+        raise HTTPException(detail=f"No task with the {task_id}, Enter a valid id.",status_code=status.HTTP_404_NOT_FOUND)
+    task_obj.title= task.title
+    task_obj.done= task.done
+    db.commit()
+    db.refresh(task_obj)
+    return task_obj
+
 
 @app.delete("/task/{task_id}")
-def del_task(task_id:int):
-    for t in tasks:
-        if t["id"] == task_id:
-            tasks.remove(t)
-            return {HTTPException(status_code=status.HTTP_204_NO_CONTENT,detail="Task removed successfully")}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=f"there is no task with {task_id}") 
+def del_task(task_id:int,db:Session=Depends(get_db)):
+    task_obj=db.query(Task).filter(Task.id == task_id).first()
+    if not task_obj:
+        raise HTTPException(detail="oops! Tryagain-thats a wrong id",status_code=status.HTTP_404_NOT_FOUND)
+    db.delete(task_obj)
+    db.commit()
+    return{
+        "Message":"Task deleted successfully."
+    }
